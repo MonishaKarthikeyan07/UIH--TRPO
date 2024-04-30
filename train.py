@@ -1,10 +1,12 @@
+import os
 import torch
 import numpy as np
 import torch.nn as nn
-import os
-import shutil
+from torchvision import transforms
 from torch.utils.data import DataLoader
+import shutil
 import sys
+import datetime
 from model import PhysicalNN
 from uwcc import uwcc
 
@@ -22,6 +24,13 @@ def main():
     ucc_fd = sys.argv[2]
     ori_dirs = [os.path.join(ori_fd, f) for f in os.listdir(ori_fd)]
     ucc_dirs = [os.path.join(ucc_fd, f) for f in os.listdir(ucc_fd)]
+
+    # Print out directories for debugging
+    print("Original directories:", ori_dirs)
+    print("Corrected directories:", ucc_dirs)
+
+    if len(ori_dirs) == 0 or len(ucc_dirs) == 0:
+        raise RuntimeError('Found 0 image pairs in given directories.')
 
     # Create model
     model = PhysicalNN()
