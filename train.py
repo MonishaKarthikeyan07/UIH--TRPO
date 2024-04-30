@@ -19,7 +19,7 @@ def main():
     lr = 0.001
     batchsize = 1
     n_workers = 2
-    epochs = 3000
+    epochs = 50
     ori_fd = sys.argv[1]
     ucc_fd = sys.argv[2]
     ori_dirs = [os.path.join(ori_fd, f) for f in os.listdir(ori_fd)]
