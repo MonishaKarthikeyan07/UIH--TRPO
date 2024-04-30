@@ -15,17 +15,18 @@ def main():
     lr = 0.001
     batchsize = 1
     n_workers = 2
-    epochs = 3000
+    epochs = 50
     ori_fd = sys.argv[1]
     ucc_fd = sys.argv[2]
     ori_dirs = [os.path.join(ori_fd, f) for f in os.listdir(ori_fd)]
     ucc_dirs = [os.path.join(ucc_fd, f) for f in os.listdir(ucc_fd)]
 
+    device = torch.device('cpu')  # Define the device
+
     # Create model
     model = PhysicalNN()
     model = nn.DataParallel(model)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+    model = model.to(device)  # Move model to device
     torch.backends.cudnn.benchmark = True
 
     # Define optimizer
@@ -60,7 +61,7 @@ def train(trainloader, model, optimizer, criterion, epoch):
 
     for i, sample in enumerate(trainloader):
         ori, ucc = sample
-        ori = ori.to(device)
+        ori = ori.to(device)  # Move data to device
         ucc = ucc.to(device)
 
         corrected = model(ori)
