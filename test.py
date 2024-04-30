@@ -6,8 +6,8 @@ from model import PhysicalNN
 import argparse
 from torchvision import transforms
 import datetime
-import math
-
+from torch.utils.data import DataLoader
+from uwcc import uwcc
 
 def main(checkpoint, imgs_path, result_path):
 
@@ -15,17 +15,15 @@ def main(checkpoint, imgs_path, result_path):
     for image in os.listdir(imgs_path):
         ori_dirs.append(os.path.join(imgs_path, image))
 
-    # Check for GPU
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
 
     # Load model
     model = PhysicalNN()
     model = torch.nn.DataParallel(model).to(device)
-    print("=> loading trained model")
+    print("=> Loading trained model")
     checkpoint = torch.load(checkpoint, map_location=device)
     model.load_state_dict(checkpoint['state_dict'])
-    print("=> loaded model at epoch {}".format(checkpoint['epoch']))
+    print("=> Loaded model at epoch {}".format(checkpoint['epoch']))
     model = model.module
     model.eval()
 
@@ -36,7 +34,7 @@ def main(checkpoint, imgs_path, result_path):
 
     starttime = datetime.datetime.now()
     for imgdir in ori_dirs:
-        img_name = (imgdir.split('/')[-1]).split('.')[0]
+        img_name = os.path.splitext(os.path.basename(imgdir))[0]
         img = Image.open(imgdir)
         inp = testtransform(img).unsqueeze(0)
         inp = inp.to(device)
@@ -46,19 +44,16 @@ def main(checkpoint, imgs_path, result_path):
         dir = '{}/results_{}'.format(result_path, checkpoint['epoch'])
         if not os.path.exists(dir):
             os.makedirs(dir)
-        corrected.save(dir+'/{}corrected.png'.format(img_name))
+        corrected.save(os.path.join(dir, '{}_corrected.png'.format(img_name)))
     endtime = datetime.datetime.now()
-    print(endtime-starttime)
-
+    print(endtime - starttime)
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', help='checkpoints path', required=True)
-    parser.add_argument(
-            '--images', help='test images folder', default='./test_img/')
-    parser.add_argument(
-            '--result', help='results folder', default='./results/')
+    parser.add_argument('--images', help='test images folder', default='./test_img/')
+    parser.add_argument('--result', help='results folder', default='./results/')
     args = parser.parse_args()
     checkpoint = args.checkpoint
     imgs = args.images
