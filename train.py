@@ -12,11 +12,11 @@ device = torch.device('cpu')  # Define the device
 
 def main():
 
-    best_loss = 9999.0
+    best_loss = float('inf')
 
     lr = 0.001
-    batchsize = 1
-    n_workers = 2
+    batch_size = 16  # Decrease batch size
+    n_workers = 4  # Increase number of workers
     epochs = 50
     ori_fd = sys.argv[1]
     ucc_fd = sys.argv[2]
@@ -37,7 +37,7 @@ def main():
 
     # Load data
     trainset = uwcc(ori_dirs, ucc_dirs, train=True)
-    trainloader = DataLoader(trainset, batchsize, shuffle=True, num_workers=n_workers)
+    trainloader = DataLoader(trainset, batch_size, shuffle=True, num_workers=n_workers)
 
     # Train
     for epoch in range(epochs):
