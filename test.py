@@ -9,13 +9,13 @@ import datetime
 from torch.utils.data import DataLoader
 from uwcc import uwcc
 
+device = torch.device('cpu')  # Define the device
+
 def main(checkpoint, imgs_path, result_path):
 
     ori_dirs = []
     for image in os.listdir(imgs_path):
         ori_dirs.append(os.path.join(imgs_path, image))
-
-    device = torch.device('cpu')
 
     # Load model
     model = PhysicalNN()
