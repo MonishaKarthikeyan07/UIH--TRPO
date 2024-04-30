@@ -1,66 +1,54 @@
-import os
 import torch
 import numpy as np
-from PIL import Image
-from model import PhysicalNN
-import argparse
-from torchvision import transforms
-import datetime
-import math
+import torch.nn as nn
 
+class AConvBlock(nn.Module):
+    def __init__(self):
+        super(AConvBlock, self).__init__()
 
-def main(checkpoint, imgs_path, result_path):
+        block = [nn.Conv2d(3, 3, 3, padding=1)]
+        block += [nn.PReLU()]
 
-    ori_dirs = []
-    for image in os.listdir(imgs_path):
-        ori_dirs.append(os.path.join(imgs_path, image))
+        block += [nn.Conv2d(3, 3, 3, padding=1)]
+        block += [nn.PReLU()]
 
-    # Check for GPU
+        block += [nn.AdaptiveAvgPool2d((1, 1))]
+        block += [nn.Conv2d(3, 3, 1)]
+        block += [nn.PReLU()]
+        block += [nn.Conv2d(3, 3, 1)]
+        block += [nn.PReLU()]
+        self.block = nn.Sequential(*block)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    def forward(self, x):
+        return self.block(x)
 
-    # Load model
-    model = PhysicalNN()
-    model = torch.nn.DataParallel(model).to(device)
-    print("=> loading trained model")
-    checkpoint = torch.load(checkpoint, map_location=device)
-    model.load_state_dict(checkpoint['state_dict'])
-    print("=> loaded model at epoch {}".format(checkpoint['epoch']))
-    model = model.module
-    model.eval()
+class tConvBlock(nn.Module):
+    def __init__(self):
+        super(tConvBlock, self).__init__()
 
-    testtransform = transforms.Compose([
-                transforms.ToTensor(),
-            ])
-    unloader = transforms.ToPILImage()
+        block = [nn.Conv2d(6, 8, 3, padding=1, dilation=1)]
+        block += [nn.PReLU()]
+        block += [nn.Conv2d(8, 8, 3, padding=2, dilation=2)]
+        block += [nn.PReLU()]
+        block += [nn.Conv2d(8, 8, 3, padding=5, dilation=5)]
+        block += [nn.PReLU()]
 
-    starttime = datetime.datetime.now()
-    for imgdir in ori_dirs:
-        img_name = (imgdir.split('/')[-1]).split('.')[0]
-        img = Image.open(imgdir)
-        inp = testtransform(img).unsqueeze(0)
-        inp = inp.to(device)
-        out = model(inp)
+        block += [nn.Conv2d(8, 3, 3, padding=1)]
+        block += [nn.PReLU()]
+        self.block = nn.Sequential(*block)
 
-        corrected = unloader(out.cpu().squeeze(0))
-        dir = '{}/results_{}'.format(result_path, checkpoint['epoch'])
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        corrected.save(dir+'/{}corrected.png'.format(img_name))
-    endtime = datetime.datetime.now()
-    print(endtime-starttime)
+    def forward(self, x):
+        return self.block(x)
 
+class PhysicalNN(nn.Module):
+    def __init__(self):
+        super(PhysicalNN, self).__init__()
 
-if __name__ == '__main__':
+        self.ANet = AConvBlock()
+        self.tNet = tConvBlock()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', help='checkpoints path', required=True)
-    parser.add_argument(
-            '--images', help='test images folder', default='./test_img/')
-    parser.add_argument(
-            '--result', help='results folder', default='./results/')
-    args = parser.parse_args()
-    checkpoint = args.checkpoint
-    imgs = args.images
-    result_path = args.result
-    main(checkpoint=checkpoint, imgs_path=imgs, result_path=result_path)
+    def forward(self, x):
+        A = self.ANet(x)
+        t = self.tNet(torch.cat((x * 0 + A, x), 1))
+        out = ((x - A) * t + A)
+        return torch.clamp(out, 0., 1.)
