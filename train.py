@@ -8,6 +8,8 @@ import sys
 from model import PhysicalNN
 from uwcc import uwcc
 
+device = torch.device('cpu')  # Define the device
+
 def main():
 
     best_loss = 9999.0
@@ -20,8 +22,6 @@ def main():
     ucc_fd = sys.argv[2]
     ori_dirs = [os.path.join(ori_fd, f) for f in os.listdir(ori_fd)]
     ucc_dirs = [os.path.join(ucc_fd, f) for f in os.listdir(ucc_fd)]
-
-    device = torch.device('cpu')  # Define the device
 
     # Create model
     model = PhysicalNN()
