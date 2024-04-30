@@ -1,64 +1,49 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from torchvision import transforms
 import os
-import torch
-import numpy as np
-from PIL import Image
-from models.physical_nn import PhysicalNN  # Changed import statement
-import argparse
-from torchvision import transforms
-import datetime
-import math
-
-# Rest of your code remains unchanged...
-
-from model import PhysicalNN
-from uwcc import uwcc
 import shutil
-import os
 from torch.utils.data import DataLoader
 import sys
-
+from model import PhysicalNN
+from uwcc import uwcc
 
 def main():
 
     best_loss = 9999.0
 
-
     lr = 0.001
     batchsize = 1
     n_workers = 2
-    epochs = 50
+    epochs = 3000
     ori_fd = sys.argv[1]
     ucc_fd = sys.argv[2]
     ori_dirs = [os.path.join(ori_fd, f) for f in os.listdir(ori_fd)]
     ucc_dirs = [os.path.join(ucc_fd, f) for f in os.listdir(ucc_fd)]
 
-    #create model
+    # Create model
     model = PhysicalNN()
     model = nn.DataParallel(model)
-    model = model.cuda()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
     torch.backends.cudnn.benchmark = True
 
-    #define optimizer
+    # Define optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    #define criterion
+    # Define criterion
     criterion = nn.MSELoss()
 
-    #load data
+    # Load data
     trainset = uwcc(ori_dirs, ucc_dirs, train=True)
     trainloader = DataLoader(trainset, batchsize, shuffle=True, num_workers=n_workers)
 
-
-    #train
+    # Train
     for epoch in range(epochs):
 
         tloss = train(trainloader, model, optimizer, criterion, epoch)
 
-        print('Epoch:[{}/{}] Loss{}'.format(epoch,epochs, tloss))
+        print('Epoch:[{}/{}] Loss{}'.format(epoch, epochs, tloss))
         is_best = tloss < best_loss
         best_loss = min(tloss, best_loss)
 
@@ -75,21 +60,19 @@ def train(trainloader, model, optimizer, criterion, epoch):
 
     for i, sample in enumerate(trainloader):
         ori, ucc = sample
-        ori = ori.cuda()
-        ucc = ucc.cuda()
+        ori = ori.to(device)
+        ucc = ucc.to(device)
 
         corrected = model(ori)
-        loss = criterion(corrected,ucc)
-        losses.update(loss)
+        loss = criterion(corrected, ucc)
+        losses.update(loss.item(), ori.size(0))
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
     return losses.avg
 
-
 def save_checkpoint(state, is_best):
-    """Saves checkpoint to disk"""
     freq = 500
     epoch = state['epoch'] 
 
@@ -99,7 +82,7 @@ def save_checkpoint(state, is_best):
 
     torch.save(state, filename)
 
-    if epoch%freq==0:
+    if epoch % freq == 0:
         shutil.copyfile(filename, './checkpoints/model_{}.pth.tar'.format(epoch))
     if is_best:
         shutil.copyfile(filename, './checkpoints/model_best_{}.pth.tar'.format(epoch))
