@@ -15,8 +15,8 @@ def main():
     best_loss = float('inf')
 
     lr = 0.001
-    batch_size = 16  # Decrease batch size
-    n_workers = 4  # Increase number of workers
+    batch_size = 16  # Adjust as needed
+    num_workers = 2  # Adjust to recommended maximum
     epochs = 50
     ori_fd = sys.argv[1]
     ucc_fd = sys.argv[2]
@@ -37,7 +37,7 @@ def main():
 
     # Load data
     trainset = uwcc(ori_dirs, ucc_dirs, train=True)
-    trainloader = DataLoader(trainset, batch_size, shuffle=True, num_workers=n_workers)
+    trainloader = DataLoader(trainset, batch_size, shuffle=True, num_workers=num_workers)  # Adjust num_workers
 
     # Train
     for epoch in range(epochs):
@@ -54,6 +54,7 @@ def main():
             'optimizer' : optimizer.state_dict(),
         }, is_best)
     print('Best Loss: ', best_loss)
+
 
 def train(trainloader, model, optimizer, criterion, epoch):
     losses = AverageMeter()
