@@ -89,7 +89,7 @@ def train(trainloader, model, optimizer, criterion, epoch):
 
 def save_checkpoint(state, is_best):
     freq = 500
-    epoch = state['epoch'] 
+    epoch = state['epoch']
 
     filename = './checkpoints/model_tmp.pth.tar'
     if not os.path.exists('./checkpoints'):
@@ -121,3 +121,4 @@ class AverageMeter(object):
 
 if __name__ == '__main__':
     main()
+
