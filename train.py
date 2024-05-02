@@ -10,10 +10,11 @@ import datetime
 from model import PhysicalNN
 from uwcc import UWCCDataset
 
-# Set multiprocessing start method to "spawn" to avoid the compatibility issue
-torch.multiprocessing.set_start_method("spawn")
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # Use GPU if available, otherwise use CPU
+
+# Check if the multiprocessing context has already been set
+if torch.multiprocessing.get_start_method(allow_none=True) is None:
+    torch.multiprocessing.set_start_method("spawn")
 
 def main():
     best_loss = float('inf')
