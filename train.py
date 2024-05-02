@@ -10,10 +10,12 @@ import datetime
 from model import PhysicalNN
 from uwcc import UWCCDataset
 
+# Set multiprocessing start method to "spawn" to avoid the compatibility issue
+torch.multiprocessing.set_start_method("spawn")
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # Use GPU if available, otherwise use CPU
 
 def main():
-
     best_loss = float('inf')
 
     lr = 0.001
@@ -50,7 +52,6 @@ def main():
 
     # Train
     for epoch in range(epochs):
-
         tloss = train(trainloader, model, optimizer, criterion, epoch)
 
         print('Epoch:[{}/{}] Loss{}'.format(epoch, epochs, tloss))
