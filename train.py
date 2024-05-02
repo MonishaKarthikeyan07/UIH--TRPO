@@ -8,9 +8,9 @@ import shutil
 import sys
 import datetime
 from model import PhysicalNN
-from uwcc import uwcc
+from uwcc import UWCCDataset
 
-device = torch.device('cpu')  # Define the device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # Use GPU if available, otherwise use CPU
 
 def main():
 
@@ -45,7 +45,7 @@ def main():
     criterion = nn.MSELoss()
 
     # Load data
-    trainset = uwcc(ori_dirs, ucc_dirs, train=True)
+    trainset = UWCCDataset(ori_dirs, ucc_dirs, train=True)
     trainloader = DataLoader(trainset, batch_size, shuffle=True, num_workers=num_workers)  # Adjust num_workers
 
     # Train
@@ -73,6 +73,10 @@ def train(trainloader, model, optimizer, criterion, epoch):
         ori, ucc = sample
         ori = ori.to(device)  # Move data to device
         ucc = ucc.to(device)
+
+        # Resize images to a consistent size
+        ori = torch.nn.functional.interpolate(ori, size=(480, 640), mode='bilinear', align_corners=False)
+        ucc = torch.nn.functional.interpolate(ucc, size=(480, 640), mode='bilinear', align_corners=False)
 
         corrected = model(ori)
         loss = criterion(corrected, ucc)
